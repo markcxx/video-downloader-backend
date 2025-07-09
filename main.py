@@ -7,7 +7,7 @@ import sys
 import os
 
 # 添加当前目录到Python路径
-sys.path.append(os.path.dirname(__file__))
+# sys.path.append(os.path.dirname(__file__))
 
 from singleVideoCrawler import Single_Video_Crawler
 
@@ -101,8 +101,8 @@ async def health_check():
     return {"status": "healthy", "message": "服务运行正常"}
 
 # Vercel需要的ASGI应用入口点
-handler = app
+# handler = app
 
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="127.0.0.1", port=8000)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
