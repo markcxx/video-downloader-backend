@@ -19,3 +19,4 @@ rich==13.9.3
 click==8.1.7
 babel==2.13.0
 importlib_resources==6.4.5
+f2
