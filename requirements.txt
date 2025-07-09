@@ -3,7 +3,7 @@ uvicorn[standard]==0.24.0
 pydantic==2.9.2
 requests==2.31.0
 httpx==0.28.1
-aiofiles==24.1.0
+aiofiles==22.1.0
 aiosqlite==0.20.0
 pyyaml==6.0.2
 jsonpath-ng==1.6.1
@@ -14,9 +14,9 @@ websockets_proxy==0.1.2
 PyExecJS==1.5.1
 protobuf==5.28.3
 gmssl==3.2.2
-cryptography==44.0.1
+cryptography==43.0.1
 rich==13.9.3
 click==8.1.7
 babel==2.13.0
 importlib_resources==6.4.5
-f2
+f2==0.0.1.7
