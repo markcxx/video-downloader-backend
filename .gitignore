@@ -1,0 +1,27 @@
+# Project specific files and folders that should not be committed
+
+# BiliTools reference project (not to be committed)
+BiliTools-master/
+
+# Downloaded videos and temporary files
+downloads/
+*.mp4
+*.mp3
+*.flv
+*.mkv
+*.avi
+*.webm
+*.m4a
+*.aac
+*.wav
+*.part
+*.tmp
+
+# Project specific Python files
+bilibili_crawler.py
+example_usage.py
+
+# FFmpeg logs
+ffmpeg*.log
+
+__pycache__/

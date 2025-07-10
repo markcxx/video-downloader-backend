@@ -10,6 +10,7 @@ import os
 # sys.path.append(os.path.dirname(__file__))
 
 from singleVideoCrawler import Single_Video_Crawler
+from bilibili_crawler import BilibiliCrawler
 
 app = FastAPI(
     title="抖音视频爬虫API",
@@ -27,6 +28,9 @@ app.add_middleware(
 )
 
 class VideoRequest(BaseModel):
+    url: str
+
+class BilibiliRequest(BaseModel):
     url: str
     
 class VideoResponse(BaseModel):
@@ -56,6 +60,23 @@ class VideoResponse(BaseModel):
     caption: str
     video_type: str
     video_name: str
+
+class BilibiliResponse(BaseModel):
+    success: bool
+    title: str
+    desc: str
+    cover: str
+    duration: int
+    pubdate: int
+    aid: int
+    bvid: str
+    cid: int
+    owner: dict
+    stat: dict
+    pages: List[dict]
+    play_info: dict = None
+    video_type: str
+    original_url: str
 
 @app.get("/")
 async def root():
@@ -93,15 +114,64 @@ async def parse_video(request: VideoRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"解析视频时发生错误: {str(e)}")
 
+@app.post("/api/parse_bilibili", response_model=BilibiliResponse)
+async def parse_bilibili(request: BilibiliRequest):
+    """
+    解析B站视频链接，返回视频详细信息
+    
+    Args:
+        request: 包含B站视频链接的请求体
+        
+    Returns:
+        BilibiliResponse: 视频的详细信息
+        
+    Raises:
+        HTTPException: 当解析失败时抛出异常
+    """
+    try:
+        # 创建B站爬虫实例
+        crawler = BilibiliCrawler()
+        
+        # 解析视频URL
+        result = crawler.parse_url(request.url)
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=f"解析失败: {result['error']}")
+        
+        video_data = result['data']
+        
+        # 构造响应数据
+        response_data = {
+            "success": True,
+            "title": video_data.get('title', ''),
+            "desc": video_data.get('desc', ''),
+            "cover": video_data.get('cover', ''),
+            "duration": video_data.get('duration', 0),
+            "pubdate": video_data.get('pubdate', 0),
+            "aid": video_data.get('aid', 0),
+            "bvid": video_data.get('bvid', ''),
+            "cid": video_data.get('cid', 0),
+            "owner": video_data.get('owner', {}),
+            "stat": video_data.get('stat', {}),
+            "pages": video_data.get('pages', []),
+            "play_info": video_data.get('play_info'),
+            "video_type": video_data.get('type', 'video'),
+            "original_url": request.url
+        }
+        
+        return BilibiliResponse(**response_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"解析视频时发生错误: {str(e)}")
+
 @app.get("/api/health")
 async def health_check():
     """
     健康检查接口
     """
     return {"status": "healthy", "message": "服务运行正常"}
-
-# Vercel需要的ASGI应用入口点
-# handler = app
 
 if __name__ == "__main__":
     import uvicorn
