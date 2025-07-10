@@ -18,7 +18,6 @@ downloads/
 *.tmp
 
 # Project specific Python files
-bilibili_crawler.py
 example_usage.py
 
 # FFmpeg logs
