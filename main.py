@@ -2,7 +2,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional, Any
 import sys
 import os
 
@@ -44,7 +44,7 @@ class VideoQualityOption(BaseModel):
     format: str
     fps: int
 
-class VideoResponse(BaseModel):
+class VideoData(BaseModel):
     base_url: str
     aweme_id: str
     author_name: str
@@ -72,7 +72,7 @@ class VideoResponse(BaseModel):
     video_type: str
     video_name: str
 
-class BilibiliResponse(BaseModel):
+class BilibiliData(BaseModel):
     success: bool
     title: str
     desc: str
@@ -89,9 +89,24 @@ class BilibiliResponse(BaseModel):
     video_type: str
     original_url: str
 
+class StandardResponse(BaseModel):
+    code: int
+    message: str
+    data: Optional[Any] = None
+
+class VideoResponse(StandardResponse):
+    data: Optional[VideoData] = None
+
+class BilibiliResponse(StandardResponse):
+    data: Optional[BilibiliData] = None
+
 @app.get("/")
 async def root():
-    return {"message": "抖音视频爬虫API服务正在运行", "status": "success"}
+    return StandardResponse(
+        code=200,
+        message="抖音视频爬虫API服务正在运行",
+        data={"status": "success"}
+    )
 
 @app.post("/api/parse_video", response_model=VideoResponse)
 async def parse_video(request: VideoRequest):
@@ -115,15 +130,27 @@ async def parse_video(request: VideoRequest):
         video_id, video_type = crawler.get_video_id()
         
         if not video_id or not video_type:
-            raise HTTPException(status_code=400, detail="无法解析视频链接，请检查链接是否正确")
+            return VideoResponse(
+                code=400,
+                message="无法解析视频链接，请检查链接是否正确",
+                data=None
+            )
         
         # 获取视频详细信息
         video_info = await crawler.get_video_info(video_id, video_type)
         
-        return VideoResponse(**video_info)
+        return VideoResponse(
+            code=200,
+            message="解析成功",
+            data=VideoData(**video_info)
+        )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"解析视频时发生错误: {str(e)}")
+        return VideoResponse(
+            code=500,
+            message=f"解析视频时发生错误: {str(e)}",
+            data=None
+        )
 
 @app.post("/api/parse_bilibili", response_model=BilibiliResponse)
 async def parse_bilibili(request: BilibiliRequest):
@@ -147,7 +174,11 @@ async def parse_bilibili(request: BilibiliRequest):
         result = crawler.parse_url(request.url)
         
         if not result['success']:
-            raise HTTPException(status_code=400, detail=f"解析失败: {result['error']}")
+            return BilibiliResponse(
+                code=400,
+                message=f"解析失败: {result['error']}",
+                data=None
+            )
         
         video_data = result['data']
         
@@ -170,19 +201,29 @@ async def parse_bilibili(request: BilibiliRequest):
             "original_url": request.url
         }
         
-        return BilibiliResponse(**response_data)
+        return BilibiliResponse(
+            code=200,
+            message="解析成功",
+            data=BilibiliData(**response_data)
+        )
         
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"解析视频时发生错误: {str(e)}")
+        return BilibiliResponse(
+            code=500,
+            message=f"解析视频时发生错误: {str(e)}",
+            data=None
+        )
 
 @app.get("/api/health")
 async def health_check():
     """
     健康检查接口
     """
-    return {"status": "healthy", "message": "服务运行正常"}
+    return StandardResponse(
+        code=200,
+        message="服务运行正常",
+        data={"status": "healthy"}
+    )
 
 if __name__ == "__main__":
     import uvicorn
