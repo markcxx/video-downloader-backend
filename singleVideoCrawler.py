@@ -48,6 +48,62 @@ class Single_Video_Crawler:
             else:
                 return None, None
 
+    def _parse_video_quality_options(self, bit_rates):
+        """解析视频质量选项"""
+        quality_options = []
+        
+        for i, bitrate_info in enumerate(bit_rates):
+            # 获取分辨率
+            width = bitrate_info.get('play_addr', {}).get('width', 0)
+            height = bitrate_info.get('play_addr', {}).get('height', 0)
+            
+            # 判断分辨率等级
+            if height >= 1080:
+                resolution = "1080p"
+            elif height >= 720:
+                resolution = "720p"
+            elif height >= 540:
+                resolution = "540p"
+            else:
+                resolution = f"{height}p"
+            
+            # 获取码率（转换为Mbps）
+            bit_rate = bitrate_info.get('bit_rate', 0)
+            bitrate_mbps = round(bit_rate / 1000000, 2) if bit_rate > 0 else 0
+            
+            # 获取文件大小（转换为MB）
+            data_size = bitrate_info.get('play_addr', {}).get('data_size', 0)
+            size_mb = round(data_size / (1024 * 1024), 2) if data_size > 0 else 0
+            
+            # 判断编码格式
+            is_h265 = bitrate_info.get('is_h265', 0) == 1
+            is_bytevc1 = bitrate_info.get('is_bytevc1', 0) == 1
+            
+            if is_h265 or is_bytevc1:
+                encoding = "H.265编码"
+            else:
+                encoding = "H.264编码"
+            
+            # 获取播放地址
+            url_list = bitrate_info.get('play_addr', {}).get('url_list', [])
+            video_url = url_list[2] if len(url_list) > 2 else (url_list[0] if url_list else "")
+            
+            quality_option = {
+                "quality_index": i,
+                "resolution": resolution,
+                "bitrate": f"{bitrate_mbps} Mbps",
+                "size": f"{size_mb} MB",
+                "encoding": encoding,
+                "url": video_url,
+                "gear_name": bitrate_info.get('gear_name', ''),
+                "format": bitrate_info.get('format', 'mp4'),
+                "fps": bitrate_info.get('FPS', 30)
+            }
+            
+            quality_options.append(quality_option)
+        
+        return quality_options
+
     async def get_video_info(self, aweme_id: str, video_type: str):
         video = await DouyinHandler(self.kwargs).fetch_one_video(aweme_id=aweme_id)
         Detail = video._to_raw()['aweme_detail']
@@ -66,8 +122,16 @@ class Single_Video_Crawler:
         music_avatar = Detail['music']['cover_thumb']['url_list'][0]
         music_url = Detail['music']['play_url']['uri']
         update_time = Detail['create_time']
+        
+        # 处理视频URL和质量选项
+        video_quality_options = []
         if video_type == "video":
-            video_url = [Detail['video']['bit_rate'][4]['play_addr']['url_list'][2]]
+            # 解析所有质量选项
+            bit_rates = Detail['video']['bit_rate']
+            video_quality_options = self._parse_video_quality_options(bit_rates)
+            
+            # 默认选择最高质量（第一个选项）
+            video_url = [video_quality_options[0]['url']] if video_quality_options else []
             video_cover = Detail['video']['cover']['url_list'][0]
             video_dynamic_cover = Detail['video']['dynamic_cover']['url_list'][0]
         elif video_type == "slides":
@@ -88,6 +152,7 @@ class Single_Video_Crawler:
                 video_url = [i['url_list'][0] for i in Detail['images']]
                 video_cover = Detail['video']['cover']['url_list'][0]
                 video_dynamic_cover = ""
+        
         video_heart = Detail['statistics']['digg_count']
         video_comment = Detail['statistics']['comment_count']
         video_share = Detail['statistics']['share_count']
@@ -108,6 +173,7 @@ class Single_Video_Crawler:
             "music_avatar": music_avatar,
             "music_url": music_url,
             "video_url": video_url,
+            "video_quality_options": video_quality_options,  # 新增：视频质量选项
             "video_cover": video_cover,
             "video_dynamic_cover": video_dynamic_cover,
             "video_heart": video_heart,

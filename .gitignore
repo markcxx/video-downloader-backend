@@ -24,3 +24,8 @@ example_usage.py
 ffmpeg*.log
 
 __pycache__/
+
+test_new_features.py
+test_video_bitrates.py
+tests_single_video.py
+API_Documentation.md
