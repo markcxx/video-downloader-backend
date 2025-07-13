@@ -123,35 +123,58 @@ class Single_Video_Crawler:
         music_url = Detail['music']['play_url']['uri']
         update_time = Detail['create_time']
         
-        # 处理视频URL和质量选项
+        # 处理视频质量选项和封面
         video_quality_options = []
         if video_type == "video":
             # 解析所有质量选项
             bit_rates = Detail['video']['bit_rate']
             video_quality_options = self._parse_video_quality_options(bit_rates)
-            
-            # 默认选择最高质量（第一个选项）
-            video_url = [video_quality_options[0]['url']] if video_quality_options else []
             video_cover = Detail['video']['cover']['url_list'][0]
             video_dynamic_cover = Detail['video']['dynamic_cover']['url_list'][0]
         elif video_type == "slides":
+            # 对于图集类型，创建图片URL列表作为质量选项
             try:
-                video_url = [i['video']['play_addr']['url_list'][2] for i in Detail['images']]
-                video_cover = Detail['video']['cover']['url_list'][0]
-                video_dynamic_cover = ""
+                image_urls = [i['video']['play_addr']['url_list'][2] for i in Detail['images']]
             except KeyError:
-                video_url = [i['url_list'][0] for i in Detail['images']]
-                video_cover = Detail['video']['cover']['url_list'][0]
-                video_dynamic_cover = ""
+                image_urls = [i['url_list'][0] for i in Detail['images']]
+            
+            # 为图集创建质量选项
+            for i, url in enumerate(image_urls):
+                video_quality_options.append({
+                    "quality_index": i,
+                    "resolution": "原图",
+                    "bitrate": "N/A",
+                    "size": "N/A",
+                    "encoding": "图片",
+                    "url": url,
+                    "gear_name": f"image_{i}",
+                    "format": "jpg",
+                    "fps": 0
+                })
+            video_cover = Detail['video']['cover']['url_list'][0]
+            video_dynamic_cover = ""
         elif video_type == "note":
+            # 对于笔记类型，创建图片URL列表作为质量选项
             try:
-                video_url = [i['video']['play_addr']['url_list'][2] for i in Detail['images']]
-                video_cover = Detail['video']['cover']['url_list'][0]
-                video_dynamic_cover = ""
+                image_urls = [i['video']['play_addr']['url_list'][2] for i in Detail['images']]
             except KeyError as e:
-                video_url = [i['url_list'][0] for i in Detail['images']]
-                video_cover = Detail['video']['cover']['url_list'][0]
-                video_dynamic_cover = ""
+                image_urls = [i['url_list'][0] for i in Detail['images']]
+            
+            # 为笔记创建质量选项
+            for i, url in enumerate(image_urls):
+                video_quality_options.append({
+                    "quality_index": i,
+                    "resolution": "原图",
+                    "bitrate": "N/A",
+                    "size": "N/A",
+                    "encoding": "图片",
+                    "url": url,
+                    "gear_name": f"note_{i}",
+                    "format": "jpg",
+                    "fps": 0
+                })
+            video_cover = Detail['video']['cover']['url_list'][0]
+            video_dynamic_cover = ""
         
         video_heart = Detail['statistics']['digg_count']
         video_comment = Detail['statistics']['comment_count']
@@ -172,8 +195,7 @@ class Single_Video_Crawler:
             "music_author": music_author,
             "music_avatar": music_avatar,
             "music_url": music_url,
-            "video_url": video_url,
-            "video_quality_options": video_quality_options,  # 新增：视频质量选项
+            "video_quality_options": video_quality_options,  # 视频质量选项（包含URL）
             "video_cover": video_cover,
             "video_dynamic_cover": video_dynamic_cover,
             "video_heart": video_heart,

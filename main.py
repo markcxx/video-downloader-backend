@@ -33,6 +33,17 @@ class VideoRequest(BaseModel):
 class BilibiliRequest(BaseModel):
     url: str
     
+class VideoQualityOption(BaseModel):
+    quality_index: int
+    resolution: str
+    bitrate: str
+    size: str
+    encoding: str
+    url: str
+    gear_name: str
+    format: str
+    fps: int
+
 class VideoResponse(BaseModel):
     base_url: str
     aweme_id: str
@@ -47,7 +58,7 @@ class VideoResponse(BaseModel):
     music_author: str
     music_avatar: str
     music_url: str
-    video_url: List[str]
+    video_quality_options: List[VideoQualityOption]  # 视频质量选项（包含URL）
     video_cover: str
     video_dynamic_cover: str
     video_heart: int
